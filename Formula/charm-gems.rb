@@ -9,45 +9,45 @@ class CharmGems < Formula
   depends_on "python@3.13"
 
   resource "itk" do
-    url "https://github.com/InsightSoftwareConsortium/ITK.git",
-        tag:      "v4.13.2",
-        revision: "1c3f5fe847e15fdae24cf4609fd7945e88ec0a18"
+    url "https://github.com/InsightSoftwareConsortium/ITK/archive/refs/tags/v4.13.2.tar.gz"
+    sha256 "98c2fd826e1987d797521d83031fcaa328135daf6524f7823363d66ab288c545"
   end
 
   resource "pybind11" do
-    url "https://github.com/pybind/pybind11.git",
-        tag:      "v2.6.2",
-        revision: "be97c5a98b4b252c524566f508b5c79410d118c6"
+    url "https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz"
+    sha256 "e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20"
+  end
+
+  # Patch ITK 4.13.2 for CMake 4.x and modern macOS SDK
+  def patch_itk(itk_dir)
+    # Use sed for all patching to avoid homebrew's File.write restrictions
+    system "find", itk_dir, "-name", "CMakeLists.txt", "-o", "-name", "*.cmake",
+           "-exec", "sed", "-i", "",
+           "-E", "s/[Cc][Mm][Aa][Kk][Ee]_[Mm][Ii][Nn][Ii][Mm][Uu][Mm]_[Rr][Ee][Qq][Uu][Ii][Rr][Ee][Dd]\\(VERSION [0-9]+\\.[0-9]+(\\.[0-9]+)?( FATAL_ERROR)?\\)/cmake_minimum_required(VERSION 3.5...4.0)/g",
+           "{}", ";"
+
+    # Remove Documentation.cmake include (fatal in CMake 4.x)
+    system "sed", "-i", "",
+           "s/.*include.*Documentation\\.cmake.*/option(BUILD_DOCUMENTATION \"Build documentation\" OFF)/",
+           "#{itk_dir}/Utilities/Doxygen/CMakeLists.txt"
+
+    # Fix fp.h include (removed from modern macOS SDK)
+    # Replace the #if MWERKS...fp.h...#else...math.h...#endif block with just math.h
+    system "sed", "-i", "",
+           "/#.*defined(__MWERKS__)/,/^#  endif$/c\\
+#  include <math.h>",
+           "#{itk_dir}/Modules/ThirdParty/PNG/src/itkpng/pngpriv.h"
   end
 
   def install
-    # Checkout submodules into place
     (buildpath/"ITK").install resource("itk")
     (buildpath/"pybind11").install resource("pybind11")
 
-    # --- ITK 4.13.2 patches for CMake 4.x + modern macOS SDK ---
+    ENV["CMAKE_POLICY_VERSION_MINIMUM"] = "3.5"
 
-    # Patch cmake_minimum_required throughout ITK for CMake 4.x compat
-    Dir.glob(buildpath/"ITK/**/{CMakeLists.txt,*.cmake}").each do |f|
-      content = File.read(f)
-      next unless content.match?(/cmake_minimum_required\s*\(\s*VERSION\s+[0-3]\.\d+/i)
+    patch_itk(buildpath/"ITK")
 
-      content.gsub!(/cmake_minimum_required\s*\(\s*VERSION\s+[0-3]\.\d+(\.\d+)?(\s+FATAL_ERROR)?\s*\)/i,
-                     "cmake_minimum_required(VERSION 3.5...4.0)")
-      File.write(f, content)
-    end
-
-    # Remove Documentation.cmake include (removed in CMake 4.x, CMP0106)
-    inreplace "ITK/Utilities/Doxygen/CMakeLists.txt",
-              /.*include.*Documentation\.cmake.*/,
-              'option(BUILD_DOCUMENTATION "Build documentation" OFF)'
-
-    # Fix fp.h include (removed from modern macOS SDK)
-    inreplace "ITK/Modules/ThirdParty/PNG/src/itkpng/pngpriv.h",
-              /#\s*if\s*\(defined\(__MWERKS__\).*?#\s*include\s*<math\.h>\n#\s*endif/m,
-              "#  include <math.h>"
-
-    # --- Build ITK as static library ---
+    # Build ITK as static library
     mkdir "ITK-build" do
       system "cmake", "-G", "Unix Makefiles",
              "-DCMAKE_BUILD_TYPE=Release",
@@ -56,14 +56,12 @@ class CharmGems < Formula
              "-DBUILD_EXAMPLES=OFF",
              "-DBUILD_DOCUMENTATION=OFF",
              buildpath/"ITK"
-      ENV["CMAKE_POLICY_VERSION_MINIMUM"] = "3.5"
       system "make", "-j#{ENV.make_jobs}"
     end
 
-    # --- Build charm-gems Python wheel ---
+    # Build charm-gems Python package
     python3 = Formula["python@3.13"].opt_bin/"python3.13"
     ENV["ITK_DIR"] = buildpath/"ITK-build"
-    ENV["CMAKE_POLICY_VERSION_MINIMUM"] = "3.5"
     system python3, "-m", "pip", "install", "--prefix=#{prefix}", ".", "-v"
   end
 
