@@ -9,8 +9,12 @@ class Vmtk < Formula
   depends_on "cmake" => :build
   depends_on "itk"
   depends_on "vtk"
+  depends_on "python@3.14"
 
   def install
+    python = Formula["python@3.14"]
+    python_exe = python.opt_bin/"python3.14"
+
     args = %W[
       -DCMAKE_BUILD_TYPE=Release
       -DVMTK_USE_SUPERBUILD=OFF
@@ -18,9 +22,10 @@ class Vmtk < Formula
       -DUSE_SYSTEM_ITK=ON
       -DVMTK_USE_VTK9=ON
       -DVMTK_USE_ITK5=ON
-      -DVTK_VMTK_WRAP_PYTHON=OFF
+      -DVTK_VMTK_WRAP_PYTHON=ON
       -DVMTK_BUILD_TESTING=OFF
       -DBUILD_SHARED_LIBS=ON
+      -DPython3_EXECUTABLE=#{python_exe}
     ]
 
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
