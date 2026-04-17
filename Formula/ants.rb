@@ -6,14 +6,22 @@ class Ants < Formula
   license "Apache-2.0"
 
   depends_on "cmake" => :build
-  depends_on "itk"
+  depends_on "mhough/neuro/itk-neuro"
 
   def install
+    # ANTs hardcodes CMAKE_INSTALL_PREFIX=/opt/ANTs as CACHE variable —
+    # must remove it so std_cmake_args can set it properly
+    inreplace "CMakeLists.txt",
+              'SET(CMAKE_INSTALL_PREFIX /opt/ANTs CACHE PATH "Default ANTs install path")',
+              "# install prefix set by brew"
+
     args = %W[
-      -DANTs_SUPERBUILD=OFF
+      -DANTS_SUPERBUILD=OFF
       -DUSE_SYSTEM_ITK=ON
       -DBUILD_TESTING=OFF
       -DBUILD_SHARED_LIBS=ON
+      -DUSE_VTK=OFF
+      -DCMAKE_INSTALL_PREFIX:PATH=#{prefix}
       -DCMAKE_INSTALL_RPATH=#{lib}
     ]
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args

@@ -6,7 +6,7 @@ class C3d < Formula
   license "GPL-3.0-or-later"
 
   depends_on "cmake" => :build
-  depends_on "itk"
+  depends_on "mhough/neuro/itk-neuro"
 
   def install
     args = %w[
