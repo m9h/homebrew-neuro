@@ -22,6 +22,13 @@ class Elastix < Formula
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
     system "cmake", "--build", "build", "--parallel", ENV.make_jobs
     system "cmake", "--install", "build"
+
+    # Fix @rpath for elastix's own shared libraries
+    Dir.glob(bin/"*").each do |b|
+      next unless File.executable?(b) && !File.symlink?(b)
+
+      system "install_name_tool", "-add_rpath", lib.to_s, b
+    end
   end
 
   test do
