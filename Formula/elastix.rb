@@ -13,10 +13,11 @@ class Elastix < Formula
     dc = Formula["double-conversion"]
     ENV.append "CXXFLAGS", "-I#{dc.opt_include}/double-conversion"
 
-    args = %w[
+    args = %W[
       -DBUILD_TESTING=OFF
       -DELASTIX_USE_OPENCL=OFF
       -DUSE_ALL_COMPONENTS=OFF
+      -DCMAKE_INSTALL_RPATH=#{lib}
     ]
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
     system "cmake", "--build", "build", "--parallel", ENV.make_jobs
