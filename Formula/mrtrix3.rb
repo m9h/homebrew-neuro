@@ -8,8 +8,8 @@ class Mrtrix3 < Formula
   depends_on "python@3.13" => :build
   depends_on "eigen@3"
   depends_on "fftw"
-  depends_on "libtiff"
   depends_on "libpng"
+  depends_on "libtiff"
   depends_on "zlib"
 
   def install

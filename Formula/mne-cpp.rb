@@ -1,5 +1,5 @@
 class MneCpp < Formula
-  desc "MNE-CPP — cross-platform C++ library for MEG and EEG data processing"
+  desc "— cross-platform C++ library for MEG and EEG data processing"
   homepage "https://mne-cpp.github.io"
   url "https://github.com/mne-tools/mne-cpp/archive/refs/tags/v2.1.0.tar.gz"
   sha256 "f8afb082abe22d963ae6ebc6ff5862276b156cb27f2a15a0b32e9de9c51cbf54"

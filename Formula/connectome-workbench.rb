@@ -28,7 +28,7 @@ class ConnectomeWorkbench < Formula
               "char* tagList = &outline.tags[startIndex];",
               "const unsigned char* tagList = &outline.tags[startIndex];"
 
-    args = %W[
+    args = %w[
       -DCMAKE_BUILD_TYPE=Release
       -DWORKBENCH_USE_QT6=TRUE
       -DWORKBENCH_USE_QT5=FALSE

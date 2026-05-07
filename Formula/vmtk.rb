@@ -8,8 +8,8 @@ class Vmtk < Formula
 
   depends_on "cmake" => :build
   depends_on "itk"
-  depends_on "vtk"
   depends_on "python@3.14"
+  depends_on "vtk"
 
   def install
     python = Formula["python@3.14"]

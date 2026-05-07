@@ -5,8 +5,8 @@ class Sigviewer < Formula
   sha256 "a08e599c142b0b7750380301cea3cd6eb324dab8342bad2e2441da0aa9c627ed"
   license "GPL-3.0-or-later"
 
-  depends_on "cmake" => :build
   depends_on "autoconf" => :build
+  depends_on "cmake" => :build
   depends_on "qt"
   depends_on "suite-sparse"
 

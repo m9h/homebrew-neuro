@@ -8,9 +8,24 @@ class Liblsl < Formula
   depends_on "cmake" => :build
 
   def install
-    system "cmake", "-S", ".", "-B", "build", "-DLSL_BUILD_STATIC=OFF", *std_cmake_args
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DLSL_BUILD_STATIC=OFF",
+                    "-DLSL_FRAMEWORK=OFF",
+                    *std_cmake_args
     system "cmake", "--build", "build", "--parallel", ENV.make_jobs
     system "cmake", "--install", "build"
+
+    # Upstream hard-codes ELF-style $ORIGIN rpaths on the lslver binary.
+    # Replace with macOS-native @loader_path so the binary can find liblsl.dylib.
+    if OS.mac?
+      file = MachO::MachOFile.new(bin/"lslver")
+      file.rpaths.each { |rp| file.delete_rpath(rp) }
+      file.add_rpath("@loader_path/../lib")
+      file.write!
+      # Re-sign: rpath edits invalidate the ad-hoc signature and the kernel
+      # SIGKILLs the binary on launch (Apple Silicon hardened runtime).
+      system "/usr/bin/codesign", "--force", "--sign", "-", bin/"lslver"
+    end
   end
 
   test do
@@ -20,5 +35,6 @@ class Liblsl < Formula
     C
     system ENV.cc, "test.c", "-I#{include}", "-L#{lib}", "-llsl", "-o", "test"
     system "./test"
+    system bin/"lslver"
   end
 end

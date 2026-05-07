@@ -6,6 +6,7 @@ class CharmGems < Formula
   license "GPL-3.0-or-later"
 
   depends_on "cmake" => :build
+  depends_on "libpng"
   depends_on "python@3.13"
 
   resource "itk" do
@@ -55,8 +56,21 @@ class CharmGems < Formula
              "-DBUILD_TESTING=OFF",
              "-DBUILD_EXAMPLES=OFF",
              "-DBUILD_DOCUMENTATION=OFF",
+             # ITK 4.13.2's bundled libpng predates Apple Silicon: pngrutil.c
+             # references _png_init_filter_functions_neon but the arm-specific
+             # sources aren't compiled. Use Homebrew libpng instead.
+             "-DITK_USE_SYSTEM_PNG=ON",
              buildpath/"ITK"
       system "make", "-j#{ENV.make_jobs}"
+    end
+
+    # gems/CMakeLists.txt and gems_python/CMakeLists.txt both hardcode
+    # "-msse2 -mfpmath=sse" (x86-only). Strip on arm64 where NEON is the
+    # SIMD path and is on by default.
+    if Hardware::CPU.arm?
+      ["gems/CMakeLists.txt", "gems_python/CMakeLists.txt"].each do |f|
+        system "sed", "-i", "", "s/-msse2 -mfpmath=sse//", buildpath/f
+      end
     end
 
     # Build charm-gems Python package
