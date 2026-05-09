@@ -1,28 +1,46 @@
 class Brainflow < Formula
-  desc "Library for obtaining EEG, EMG, ECG, and other biosignal data"
+  desc "Biosensor Library (EEG, EMG, ECG)"
   homepage "https://brainflow.org"
-  url "https://github.com/brainflow-dev/brainflow/archive/refs/tags/5.21.0.tar.gz"
-  sha256 "63fed79f128b8db05c81bc1be37812c181d311165ee29f7c2e6aaca792dc2472"
+  url "https://github.com/brainflow-dev/brainflow/archive/refs/tags/5.19.0.tar.gz"
+  sha256 "047e81d69ae2fdf1cb78a291d0f07e89be53d278c27cc2f44889239da27d4a4c"
   license "MIT"
 
   depends_on "cmake" => :build
+  depends_on "ninja" => :build
+  depends_on "libusb"
+  depends_on "openblas"
 
   def install
     args = %w[
-      -DCMAKE_BUILD_TYPE=Release
-      -DBUILD_BLUETOOTH=OFF
-      -DBUILD_BLE=OFF
+      -GNinja
+      -DBUILD_OYMOTION_SDK=OFF
+      -DBUILD_GFORCE_SDK=OFF
+      -DBUILD_GFORCE_PRO_SDK=OFF
+      -DBUILD_SHARED_LIBS=ON
+      -DKISSFFT_STATIC=OFF
     ]
+
     system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
-    system "cmake", "--build", "build", "--parallel", ENV.make_jobs
+    system "cmake", "--build", "build"
     system "cmake", "--install", "build"
+
+    # Ensure C++ headers are available in a standard location
+    (include/"brainflow").install Dir["src/board_controller/inc/*.h"]
+    (include/"brainflow").install Dir["src/data_handler/inc/*.h"]
+    (include/"brainflow").install Dir["src/ml_module/inc/*.h"]
+    (include/"brainflow").install Dir["src/utils/inc/*.h"]
+    (include/"brainflow").install Dir["cpp_package/src/inc/*.h"]
   end
 
   test do
-    (testpath/"test.c").write <<~C
-      #include <board_controller.h>
-      int main() { return 0; }
-    C
-    system ENV.cc, "test.c", "-I#{include}", "-o", "test"
+    (testpath/"test.cpp").write <<~CPP
+      #include "brainflow/board_shim.h"
+      int main() {
+        BoardShim::set_log_level(6);
+        return 0;
+      }
+    CPP
+    system ENV.cxx, "test.cpp", "-I#{include}", "-o", "test"
+    system "./test"
   end
 end
