@@ -1,37 +1,31 @@
 class Elastix < Formula
-  desc "Medical image registration toolbox"
-  homepage "https://elastix.dev"
-  url "https://github.com/SuperElastix/elastix/archive/refs/tags/5.3.1.tar.gz"
-  sha256 "f4f69b3e94f8b2f7cc53899e63192c501e4c78e630388e2034fabf848cbc89f7"
+  desc "Toolbox for rigid and nonrigid registration of images"
+  homepage "https://github.com/SuperElastix/elastix"
+  url "https://github.com/SuperElastix/elastix/archive/ef34ca9.tar.gz"
+  version "5.3.1-20260423"
+  sha256 "ff17ecc4c4c4b2f4359c50c8b471ee8458b42c8cbbe14e9e90b16899e1d9c5d2"
   license "Apache-2.0"
 
   depends_on "cmake" => :build
-  depends_on "double-conversion"
-  depends_on "mhough/neuro/itk-neuro"
+  depends_on "eigen"
+  depends_on "itk-neuro"
+  depends_on "libminc"
 
   def install
-    dc = Formula["double-conversion"]
-    ENV.append "CXXFLAGS", "-I#{dc.opt_include}/double-conversion"
+    itk_dir = Formula["itk-neuro"].opt_lib/"cmake/ITK-#{Formula["itk-neuro"].version.major_minor}"
 
     args = %W[
+      -DITK_DIR=#{itk_dir}
+      -DELASTIX_USE_EIGEN=ON
       -DBUILD_TESTING=OFF
-      -DELASTIX_USE_OPENCL=OFF
-      -DUSE_ALL_COMPONENTS=OFF
-      -DCMAKE_INSTALL_RPATH=#{lib}
     ]
-    system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
-    system "cmake", "--build", "build", "--parallel", ENV.make_jobs
+
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, *args
+    system "cmake", "--build", "build"
     system "cmake", "--install", "build"
-
-    # Fix @rpath for elastix's own shared libraries
-    Dir.glob(bin/"*").each do |b|
-      next unless File.executable?(b) && !File.symlink?(b)
-
-      system "install_name_tool", "-add_rpath", lib.to_s, b
-    end
   end
 
   test do
-    assert_match "elastix", shell_output("#{bin}/elastix --version 2>&1")
+    system "#{bin}/elastix", "--version"
   end
 end
