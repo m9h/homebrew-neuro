@@ -20,7 +20,11 @@ cask "babelbrain" do
 
   pkg "BabelBrain.pkg"
 
-  uninstall pkgutil: "com.ucalgary.babelbrain",
+  # BabelBrain's installer is a Distribution pkg whose outer wrapper has
+  # the anonymous identifier `pkg_root` (the inner bundle id
+  # com.ucalgary.babelbrain is metadata, not a pkg receipt). Target the
+  # outer id for receipt cleanup, and rely on delete: for the .app itself.
+  uninstall pkgutil: "pkg_root",
             delete:  "/Applications/BabelBrain.app"
 
   zap trash: [
